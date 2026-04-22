@@ -37,19 +37,11 @@
 
         // --- 自動聚焦邏輯開始 ---
         
-        // 1. 頁面載入後自動聚焦
-        window.onload = () => input.focus();
-
-        // 2. 當使用者點擊頁面任何地方，自動回到輸入框
-        document.addEventListener('click', () => {
-            input.focus();
-        });
-
-        // 3. 當輸入框失去焦點時，強迫它在 10 毫秒後重新聚焦
-        input.addEventListener('blur', () => {
-            setTimeout(() => {
+       document.addEventListener('keydown', (e) => {
+            // 如果目前焦點不在 input 上，就強制抓回來
+            if (document.activeElement !== input) {
                 input.focus();
-            }, 10);
+            }
         });
 
         // --- 自動聚焦邏輯結束 ---
