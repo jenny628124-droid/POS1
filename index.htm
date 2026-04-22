@@ -4,20 +4,19 @@
     <meta charset="UTF-8">
     <title>簡易掃碼銷售系統</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; }
-        input { padding: 10px; width: 300px; font-size: 1.2rem; border: 2px solid #ccc; border-radius: 5px; }
-        /* 當輸入框被選取時變色，方便確認狀態 */
+        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f9f9f9; }
+        input { padding: 12px; width: 300px; font-size: 1.2rem; border: 2px solid #ccc; border-radius: 5px; }
         input:focus { border-color: #4CAF50; outline: none; box-shadow: 0 0 5px #4CAF50; }
-        .info { margin-top: 30px; border: 1px solid #ccc; padding: 20px; display: inline-block; min-width: 300px; border-radius: 10px; }
-        .status { color: green; font-weight: bold; margin-top: 10px; }
+        .info { margin-top: 30px; border: 1px solid #ccc; padding: 20px; display: inline-block; min-width: 300px; border-radius: 10px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .status { color: green; font-weight: bold; margin-top: 10px; min-height: 1.2em; }
     </style>
 </head>
 <body>
 
     <h1>商品掃描結帳</h1>
-    <p>系統已設定為「自動對焦」，請直接掃描條碼</p>
+    <p>系統已設定為「自動對焦」且「僅限數字」</p>
     
-    <input type="text" id="barcodeInput" autofocus autocomplete="off">
+    <input type="text" id="barcodeInput" autofocus autocomplete="off" inputmode="numeric">
 
     <div class="info">
         <p>商品名稱：<span id="name">等待掃描...</span></p>
@@ -35,29 +34,32 @@
         const input = document.getElementById('barcodeInput');
         const statusMsg = document.getElementById('statusMsg');
 
-        // --- 自動聚焦邏輯開始 ---
-        
-       document.addEventListener('keydown', (e) => {
-            // 如果目前焦點不在 input 上，就強制抓回來
+        // --- 自動聚焦邏輯 ---
+        document.addEventListener('keydown', (e) => {
             if (document.activeElement !== input) {
                 input.focus();
             }
         });
 
-        // --- 自動聚焦邏輯結束 ---
+        // --- 限制只能輸入數字的邏輯 ---
+        input.addEventListener('input', function (e) {
+            // 使用正規表達式，將非數字的字元替換成空字串
+            this.value = this.value.replace(/\D/g, '');
+        });
 
         input.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
-                const code = input.value.trim(); // 去除前後空白
+                const code = input.value.trim();
                 const product = productList[code];
 
                 if (product) {
                     document.getElementById('name').innerText = product.name;
                     document.getElementById('price').innerText = product.price;
-                    statusMsg.innerText = "正在傳送紀錄...";
+                    statusMsg.innerText = "⏳ 正在傳送紀錄...";
+                    statusMsg.style.color = "#3498db";
                     saveToGoogleSheet(code, product.name, product.price);
                 } else {
-                    statusMsg.innerText = "❌ 找不到此商品條碼";
+                    statusMsg.innerText = "❌ 找不到條碼：" + code;
                     statusMsg.style.color = "red";
                 }
                 input.value = ''; // 清空輸入框
