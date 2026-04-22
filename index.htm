@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>簡易掃碼銷售系統</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        input { padding: 10px; width: 300px; font-size: 1.2rem; }
+        .info { margin-top: 30px; border: 1px solid #ccc; padding: 20px; display: inline-block; min-width: 300px; }
+        .status { color: green; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>商品掃描結帳</h1>
+    <p>請確保輸入框處於選取狀態，直接使用掃描器掃碼</p>
+    
+    <input type="text" id="barcodeInput" autofocus>
+
+    <div class="info">
+        <p>商品名稱：<span id="name">等待掃描...</span></p>
+        <p>商品單價：$<span id="price">0</span></p>
+        <div id="statusMsg" class="status"></div>
+    </div>
+
+    <script>
+        // 1. 你的商品資料庫 (可以自行增加)
+        const productList = {
+            "4710123456789": { name: "可口可樂", price: 25 },
+            "4710987654321": { name: "御飯糰", price: 35 },
+            "12345678": { name: "測試商品", price: 100 }
+        };
+
+        const input = document.getElementById('barcodeInput');
+        const statusMsg = document.getElementById('statusMsg');
+
+        input.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const code = input.value;
+                const product = productList[code];
+
+                if (product) {
+                    // 顯示在畫面上
+                    document.getElementById('name').innerText = product.name;
+                    document.getElementById('price').innerText = product.price;
+                    
+                    // 2. 執行自動存檔到 Google 表單
+                    saveToGoogleSheet(code, product.name, product.price);
+                } else {
+                    statusMsg.innerText = "❌ 找不到此商品條碼";
+                    statusMsg.style.color = "red";
+                }
+                input.value = ''; // 清空輸入框
+            }
+        });
+
+        function saveToGoogleSheet(id, name, price) {
+            // *** 請替換成你自己的 Google 表單 ID ***
+            const formID = "1aU8e0eO6rE3xdsuZDI_6gGjIPDZ8uxfdGRWReZf9c74"; 
+            
+            // *** 請替換成你在第一步找到的 entry ID ***
+            const entryID_code = "entry.1009148026";   // 條碼欄位
+            const entryID_name = " entry.638496046";   // 品名欄位
+            const entryID_price = " entry.103410697";  // 單價欄位
+
+            const baseURL = `https://docs.google.com/forms/d/e/${formID}/formResponse`;
+            const submitURL = `${baseURL}?${entryID_code}=${id}&${entryID_name}=${encodeURIComponent(name)}&${entryID_price}=${price}&submit=Submit`;
+
+            // 使用 no-cors 模式，因為我們只需要發送數據，不需要讀取回傳結果
+            fetch(submitURL, { mode: 'no-cors' })
+                .then(() => {
+                    statusMsg.innerText = "✅ 銷售紀錄已存至後台";
+                    statusMsg.style.color = "green";
+                })
+                .catch(err => {
+                    statusMsg.innerText = "⚠️ 紀錄失敗，請檢查網路";
+                    statusMsg.style.color = "orange";
+                });
+        }
+    </script>
+</body>
+</html>
