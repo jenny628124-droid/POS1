@@ -5,17 +5,19 @@
     <title>簡易掃碼銷售系統</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 50px; }
-        input { padding: 10px; width: 300px; font-size: 1.2rem; }
-        .info { margin-top: 30px; border: 1px solid #ccc; padding: 20px; display: inline-block; min-width: 300px; }
+        input { padding: 10px; width: 300px; font-size: 1.2rem; border: 2px solid #ccc; border-radius: 5px; }
+        /* 當輸入框被選取時變色，方便確認狀態 */
+        input:focus { border-color: #4CAF50; outline: none; box-shadow: 0 0 5px #4CAF50; }
+        .info { margin-top: 30px; border: 1px solid #ccc; padding: 20px; display: inline-block; min-width: 300px; border-radius: 10px; }
         .status { color: green; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <h1>商品掃描結帳</h1>
-    <p>請確保輸入框處於選取狀態，直接使用掃描器掃碼</p>
+    <p>系統已設定為「自動對焦」，請直接掃描條碼</p>
     
-    <input type="text" id="barcodeInput" autofocus>
+    <input type="text" id="barcodeInput" autofocus autocomplete="off">
 
     <div class="info">
         <p>商品名稱：<span id="name">等待掃描...</span></p>
@@ -24,7 +26,6 @@
     </div>
 
     <script>
-        // 1. 你的商品資料庫 (可以自行增加)
         const productList = {
             "4710123456789": { name: "可口可樂", price: 25 },
             "4710987654321": { name: "御飯糰", price: 35 },
@@ -34,17 +35,34 @@
         const input = document.getElementById('barcodeInput');
         const statusMsg = document.getElementById('statusMsg');
 
+        // --- 自動聚焦邏輯開始 ---
+        
+        // 1. 頁面載入後自動聚焦
+        window.onload = () => input.focus();
+
+        // 2. 當使用者點擊頁面任何地方，自動回到輸入框
+        document.addEventListener('click', () => {
+            input.focus();
+        });
+
+        // 3. 當輸入框失去焦點時，強迫它在 10 毫秒後重新聚焦
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                input.focus();
+            }, 10);
+        });
+
+        // --- 自動聚焦邏輯結束 ---
+
         input.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
-                const code = input.value;
+                const code = input.value.trim(); // 去除前後空白
                 const product = productList[code];
 
                 if (product) {
-                    // 顯示在畫面上
                     document.getElementById('name').innerText = product.name;
                     document.getElementById('price').innerText = product.price;
-                    
-                    // 2. 執行自動存檔到 Google 表單
+                    statusMsg.innerText = "正在傳送紀錄...";
                     saveToGoogleSheet(code, product.name, product.price);
                 } else {
                     statusMsg.innerText = "❌ 找不到此商品條碼";
@@ -55,20 +73,16 @@
         });
 
         function saveToGoogleSheet(id, name, price) {
-            // *** 請替換成你自己的 Google 表單 ID ***
             const formID = "1FAIpQLSe-CKAfRZk5LZVxqsUaWSFGVTJw6bCwT-mXoknqk8jF--zFCA"; 
-            
-            // *** 請替換成你在第一步找到的 entry ID ***
-            const entryID_code = "entry.1009148026";   // 條碼欄位
-            const entryID_name = "entry.638496046";   // 品名欄位
-            const entryID_price = "entry.103410697";  // 單價欄位
-            
+            const entryID_code = "entry.1009148026";
+            const entryID_name = "entry.638496046";
+            const entryID_price = "entry.103410697";
+
             const baseURL = `https://docs.google.com/forms/d/e/${formID}/formResponse`;
             const submitURL = `${baseURL}?${entryID_code}=${id}&${entryID_name}=${encodeURIComponent(name)}&${entryID_price}=${price}`;
 
-            // 為了確保萬無一失，我們改用更穩定的發送方式
             fetch(submitURL, {
-                method: 'POST', // 改用 POST 模仿表單送出
+                method: 'POST',
                 mode: 'no-cors'
             })
             .then(() => {
